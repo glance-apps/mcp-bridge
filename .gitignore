@@ -1,0 +1,13 @@
+# Node
+node_modules/
+npm-debug.log*
+*.tgz
+
+# MCPB build output (packed and signed bundles are build artifacts)
+dist-mcpb/
+
+# Editors and OS
+.DS_Store
+*.swp
+.idea/
+.vscode/

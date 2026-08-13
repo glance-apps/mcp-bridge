@@ -1,0 +1,42 @@
+{
+  "name": "@glance-apps/mcp-bridge",
+  "version": "0.1.0",
+  "description": "stdio to Streamable HTTP bridge for the dayGLANCE MCP server. A stateless pipe: tools and data live in dayGLANCE.",
+  "type": "module",
+  "bin": {
+    "dayglance-mcp-bridge": "bridge.js"
+  },
+  "main": "bridge.js",
+  "files": [
+    "bridge.js",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "mcpb:stage": "node scripts/stage-mcpb.mjs",
+    "mcpb:pack": "npm run mcpb:stage && npx @anthropic-ai/mcpb pack dist-mcpb/bundle dist-mcpb/dayglance-mcp-bridge.mcpb",
+    "mcpb:sign": "npx @anthropic-ai/mcpb sign dist-mcpb/dayglance-mcp-bridge.mcpb --self-signed",
+    "mcpb": "npm run mcpb:pack && npm run mcpb:sign"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/glance-apps/mcp-bridge.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "dayglance",
+    "bridge",
+    "stdio"
+  ],
+  "author": "GLANCE Apps",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}
