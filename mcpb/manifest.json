@@ -1,0 +1,48 @@
+{
+  "manifest_version": "0.3",
+  "name": "dayglance",
+  "display_name": "dayGLANCE",
+  "version": "0.1.0",
+  "description": "Read and manage your dayGLANCE schedule, tasks, and goals. All data stays on your machine.",
+  "long_description": "Connects Claude Desktop to the dayGLANCE app running on this computer. Tools include reading the day and week, listing inbox tasks, goal progress, creating and scheduling tasks, and completion. Enable the MCP server in dayGLANCE under Settings, then Local Integrations. Direct-download builds of dayGLANCE are discovered automatically. If you installed dayGLANCE from the Mac App Store, copy the token from the same settings screen into the Token field here.",
+  "author": {
+    "name": "GLANCE Apps",
+    "url": "https://glance-apps.com"
+  },
+  "homepage": "https://github.com/glance-apps/mcp-bridge",
+  "license": "MIT",
+  "server": {
+    "type": "node",
+    "entry_point": "server/bridge.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/bridge.js"],
+      "env": {
+        "DAYGLANCE_MCP_TOKEN": "${user_config.token}",
+        "DAYGLANCE_MCP_PORT": "${user_config.port}"
+      }
+    }
+  },
+  "user_config": {
+    "token": {
+      "type": "string",
+      "title": "dayGLANCE MCP token",
+      "description": "Only needed for Mac App Store installs of dayGLANCE. Copy it from dayGLANCE Settings, then Local Integrations. Direct-download builds are discovered automatically and can leave this empty.",
+      "sensitive": true,
+      "required": false
+    },
+    "port": {
+      "type": "number",
+      "title": "Port",
+      "description": "The MCP server port shown in dayGLANCE Settings. Leave at 7893 unless you changed it there.",
+      "default": 7893,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "win32"],
+    "runtimes": {
+      "node": ">=20"
+    }
+  }
+}
