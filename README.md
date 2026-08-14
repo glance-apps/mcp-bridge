@@ -12,7 +12,7 @@ First, in dayGLANCE: open **Settings**, then **Local Integrations**, and enable 
 
 Install the `dayglance-mcp-bridge.mcpb` bundle from [Releases](https://github.com/glance-apps/mcp-bridge/releases): drag it into Claude Desktop's Settings, Extensions page. Direct-download builds of dayGLANCE are discovered automatically. If you installed dayGLANCE from the Mac App Store, copy the token from dayGLANCE's settings into the extension's **Token** field.
 
-The bundle is self-signed. `mcpb verify` reports "ERROR: Extension is not signed" for it: the CLI validates the certificate against the OS trust store and does not distinguish an untrusted self-signed certificate from no signature at all. That output is expected; the install test that matters is dragging the bundle into Claude Desktop. Some enterprise policies block unsigned or self-signed extensions; in managed environments, use the npx path below instead.
+The bundle is unsigned. `@anthropic-ai/mcpb` 2.1.2's `sign` command corrupts the archive for strict zip readers (it appends the signature block without updating the end-of-central-directory comment length), and Claude Desktop rejects the result. A signature would buy nothing here anyway: `mcpb verify` reports "Extension is not signed" for any certificate that is not in the OS trust store, self-signed included. Claude Desktop installs unsigned bundles. Some enterprise policies block unsigned extensions; in managed environments, use the npx path below instead.
 
 ### Claude Desktop, manual entry
 

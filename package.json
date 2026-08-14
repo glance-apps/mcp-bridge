@@ -21,7 +21,11 @@
     "mcpb:stage": "node scripts/stage-mcpb.mjs",
     "mcpb:pack": "npm run mcpb:stage && npx @anthropic-ai/mcpb pack dist-mcpb/bundle dist-mcpb/dayglance-mcp-bridge.mcpb",
     "mcpb:sign": "npx @anthropic-ai/mcpb sign dist-mcpb/dayglance-mcp-bridge.mcpb --self-signed",
-    "mcpb": "npm run mcpb:pack && npm run mcpb:sign"
+    "mcpb:check": "node scripts/check-mcpb.mjs dist-mcpb/dayglance-mcp-bridge.mcpb",
+    "mcpb": "npm run mcpb:pack && npm run mcpb:check"
+  },
+  "devDependencies": {
+    "yauzl": "^3.2.0"
   },
   "repository": {
     "type": "git",
