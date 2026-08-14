@@ -6,6 +6,12 @@ npm-debug.log*
 # MCPB build output (packed and signed bundles are build artifacts)
 dist-mcpb/
 
+# Signing identity: `mcpb sign --self-signed` writes these into the repo root.
+# The private key must never be committed. Keep the pair and reuse it across
+# releases so the publisher identity stays stable.
+cert.pem
+key.pem
+
 # Editors and OS
 .DS_Store
 *.swp
