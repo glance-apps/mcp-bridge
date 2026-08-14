@@ -162,3 +162,32 @@ test('error copy names the likely cause and contains no em dashes', () => {
     assert.ok(!m.includes('\u2013'), `en dash in: ${m}`);
   }
 });
+
+test('unexpanded Claude Desktop templates behave as unset, never as values', () => {
+  const discovery = JSON.stringify({ port: 7999, token: 'from-discovery' });
+  const viaEnv = resolveConfig({
+    ...base,
+    env: { DAYGLANCE_MCP_TOKEN: '${user_config.token}', DAYGLANCE_MCP_PORT: '${user_config.port}' },
+    readFile: () => discovery,
+  });
+  assert.equal(viaEnv.token, 'from-discovery');
+  assert.equal(viaEnv.port, 7999);
+  assert.deepEqual(viaEnv.sources, { port: 'discovery', token: 'discovery' });
+
+  const viaArgs = resolveConfig({
+    ...base,
+    argv: ['--token', '${user_config.token}', '--port=${user_config.port}'],
+    readFile: () => discovery,
+  });
+  assert.equal(viaArgs.token, 'from-discovery');
+  assert.equal(viaArgs.port, 7999);
+
+  // A template alongside a real env value: only the template is discarded.
+  const mixed = resolveConfig({
+    ...base,
+    env: { DAYGLANCE_MCP_TOKEN: 'real-token', DAYGLANCE_MCP_PORT: '${user_config.port}' },
+    readFile: () => discovery,
+  });
+  assert.equal(mixed.token, 'real-token');
+  assert.equal(mixed.port, 7999);
+});

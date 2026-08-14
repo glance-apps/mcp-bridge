@@ -20,6 +20,16 @@ export function parseArgs(argv) {
   return out;
 }
 
+/**
+ * Claude Desktop passes manifest env templates through unexpanded when the
+ * corresponding user_config field is left blank: the bridge then sees the
+ * literal string "${user_config.token}". Such values must behave exactly
+ * like unset values — a literal template sent as a Bearer token gets a 401
+ * that reads like a rotated token. Ports only escape by accident (the
+ * literal fails integer validation), so both fields are guarded uniformly.
+ */
+const isUnexpandedTemplate = (value) => typeof value === 'string' && value.startsWith('${');
+
 /** A syntactically usable port, or null. */
 function asPort(value) {
   const n = Number(value);
@@ -35,16 +45,21 @@ function asPort(value) {
  */
 export function resolveConfig({ argv, env, platform, home, readFile, paths }) {
   const args = parseArgs(argv);
+  for (const key of ['port', 'token']) {
+    if (isUnexpandedTemplate(args[key])) delete args[key];
+  }
+  const envPort = isUnexpandedTemplate(env.DAYGLANCE_MCP_PORT) ? undefined : env.DAYGLANCE_MCP_PORT;
+  const envToken = isUnexpandedTemplate(env.DAYGLANCE_MCP_TOKEN) ? undefined : env.DAYGLANCE_MCP_TOKEN;
   let port = asPort(args.port);
   let token = args.token || null;
   const sources = { port: port !== null ? 'args' : null, token: token ? 'args' : null };
 
-  if (port === null && asPort(env.DAYGLANCE_MCP_PORT) !== null) {
-    port = asPort(env.DAYGLANCE_MCP_PORT);
+  if (port === null && asPort(envPort) !== null) {
+    port = asPort(envPort);
     sources.port = 'env';
   }
-  if (!token && env.DAYGLANCE_MCP_TOKEN) {
-    token = env.DAYGLANCE_MCP_TOKEN;
+  if (!token && envToken) {
+    token = envToken;
     sources.token = 'env';
   }
 

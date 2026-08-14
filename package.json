@@ -1,6 +1,6 @@
 {
   "name": "@glance-apps/mcp-bridge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "stdio to Streamable HTTP bridge for the dayGLANCE MCP server. A stateless pipe: tools and data live in dayGLANCE.",
   "type": "module",
   "bin": {

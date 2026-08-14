@@ -50,6 +50,8 @@ Sources in priority order. Later sources fill only what earlier ones left unset.
    - Linux: `$XDG_CONFIG_HOME/dayglance/mcp.json`, falling back to `~/.config/dayglance/mcp.json`
    - macOS (direct download): `~/Library/Application Support/dayGLANCE/mcp.json`
 
+Values that are unexpanded `${user_config.*}` templates are treated as unset. Claude Desktop passes the manifest's env templates through literally when the corresponding field is left blank, and a literal template must not shadow the discovery file.
+
 Mac App Store builds of dayGLANCE write no discovery file, and this bridge never reads into a macOS app sandbox container. On macOS 15 and later, that read would trigger a consent prompt attributed to "node" that names neither Claude nor dayGLANCE. The token must be provided explicitly on MAS, and dayGLANCE's settings show it for copying.
 
 ## License
