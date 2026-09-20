@@ -6,7 +6,9 @@ Claude Desktop and most editor integrations launch MCP servers over stdio. dayGL
 
 ## Before any path: enable the server
 
-In dayGLANCE, open **Settings**, then **Local Integrations**, and enable the **MCP server**. Reads, writes, and device calendar access are separate opt-ins on the same screen. Nothing below works until the server is enabled, and dayGLANCE must be running for any client to connect: on macOS the window can be closed because the app stays alive in the background, but a quit app means no listener. **An assistant listing dayGLANCE tools is not evidence that writes are enabled.** The write tools are always advertised; the consent tier is enforced per call. If writes are off, the tools appear in the client's tool list and the first write returns `read_only_mode`. Check Local Integrations, not the assistant.
+In dayGLANCE, open **Settings**, then **Local Integrations**, and enable the **MCP server**. Reads, writes, and device calendar access are separate opt-ins on the same screen. Nothing below works until the server is enabled, and dayGLANCE must be running for any client to connect: on macOS the window can be closed because the app stays alive in the background, but a quit app means no listener. 
+
+**An assistant listing dayGLANCE tools is not evidence that writes are enabled.** The write tools are always advertised; the consent tier is enforced per call. If writes are off, the tools appear in the client's tool list and the first write returns `read_only_mode`. Check Local Integrations, not the assistant.
 
 > **Mac App Store build?** You will need to paste the access token manually. MAS builds write no discovery file, so the bridge cannot find dayGLANCE on its own. See [Mac App Store builds](#mac-app-store-builds-the-token-is-manual-on-purpose).
 
@@ -115,7 +117,7 @@ Every bridge error names its likely cause; these are the failures that actually 
 
 **Writes stopped working entirely.** Writes are rate-limited to 30 per minute, and an agent that keeps pushing past the limit trips an escalation: three violations within five minutes disables writes altogether, and Local Integrations shows "writes auto-disabled". Restart dayGLANCE to re-enable them. Reads keep working throughout, so a client that can still read the schedule but silently fails every change is the signature of this rather than of a lost connection.
 
-**A write was refused with `routine_conflict`.** The requested time overlaps a routine block. Routines are read-only over MCP, so dayGLANCE cannot move one out of the way, and it will not silently shift your task to the next free slot either: a success reporting a time you did not ask for is worse than a refusal. Pick a time that does not overlap. `dayglance_get_day` lists routine blocks for the date, so the free parts of the day are visible before you write.
+**A write was refused with `routine_conflict`.** The requested time overlaps a routine block. Routines are read-only over MCP, so dayGLANCE cannot move one out of the way, and it will not silently shift your task to the next free slot either: a success reporting a time you did not ask for is worse than a refusal. Pick a time that does not overlap. `dayglance_get_day` lists routine blocks for the date, so the free parts of the day are visible before you write. A related error, `routine_readonly`, means the opposite mistake: the target of the write *is* a routine block rather than a task. Routines are created and edited in dayGLANCE's routines dashboard, and nothing about them can be changed over MCP, including marking one complete.
 
 **Port collision.** Another process holds 7893 and dayGLANCE settings show a port error, or the bridge reports the server unreachable while dayGLANCE is running. Change the port in Local Integrations. Direct-download builds propagate it through the discovery file automatically; `.mcpb` users update the extension's Port field, manual entries pass `--port`, and Claude Code entries update the URL.
 
