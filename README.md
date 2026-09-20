@@ -1,6 +1,6 @@
 # @glance-apps/mcp-bridge
 
-stdio to Streamable HTTP bridge for the [dayGLANCE](https://glance-apps.com) MCP server. This README is the canonical setup guide for connecting AI clients to dayGLANCE; the site page explains what the capability is, this page covers how to install and configure it.
+stdio to Streamable HTTP bridge for the [dayGLANCE](https://www.glance-apps.com) MCP server. This README is the canonical setup guide for connecting AI clients to dayGLANCE; the site page explains what the capability is, this page covers how to install and configure it.
 
 Claude Desktop and most editor integrations launch MCP servers over stdio. dayGLANCE serves MCP over local HTTP at `127.0.0.1:7893/mcp`. This bridge is the pipe between the two: stdio on one side, HTTP on the other. It is stateless and contains no tools, no business logic, and no data handling. Everything lives in dayGLANCE.
 
@@ -15,6 +15,7 @@ In dayGLANCE, open **Settings**, then **Local Integrations**, and enable the **M
 | [Setup button](#setup-button-in-dayglance) | Direct-download dayGLANCE on macOS and Windows, with Claude Desktop |
 | [`.mcpb` bundle](#mcpb-bundle) | Any dayGLANCE build, with Claude Desktop |
 | [`npx` manual entry](#manual-entry-with-npx) | Anyone the other paths do not fit, and the only Claude Desktop path on Linux |
+| [Other MCP clients](#other-mcp-clients) | ChatGPT and anything else that launches stdio servers from its own settings |
 | [Claude Code](#claude-code-no-bridge-needed) | No bridge at all; direct HTTP |
 
 ### Setup button in dayGLANCE
@@ -47,6 +48,17 @@ For anyone the other two paths do not fit, and the only path on Linux. Add to `c
 ```
 
 Requires Node 20 or later on your PATH. Mac App Store installs of dayGLANCE additionally need the token, either as an argument (`"args": ["-y", "@glance-apps/mcp-bridge", "--token", "YOUR_TOKEN"]`) or via a `DAYGLANCE_MCP_TOKEN` environment variable in an `"env"` block.
+
+### Other MCP clients
+
+ChatGPT and other clients that launch MCP servers over stdio use this bridge the same way Claude Desktop does, but register it through their own MCP settings rather than `claude_desktop_config.json`. Wherever that client asks for a server command, give it:
+
+- **Command:** `npx`
+- **Arguments:** `-y @glance-apps/mcp-bridge`
+
+Requires Node 20 or later on your PATH. Mac App Store installs of dayGLANCE additionally need the token, either appended to the arguments (`-y @glance-apps/mcp-bridge --token YOUR_TOKEN`) or set as a `DAYGLANCE_MCP_TOKEN` environment variable for the server.
+
+Everything in "How the bridge finds dayGLANCE" and "Troubleshooting" applies unchanged: the bridge does not know or care which client launched it.
 
 ### Claude Code (no bridge needed)
 
@@ -99,6 +111,10 @@ Every bridge error names its likely cause; these are the failures that actually 
 
 **Wrong tier for the operation.** Reads work but writes return a `read_only_mode` error, or device calendar events are missing from schedules. Reads, writes, and device calendar access are three separate opt-ins in Local Integrations; enable the tier the operation needs.
 
+**Writes stopped working entirely.** Writes are rate-limited to 30 per minute, and an agent that keeps pushing past the limit trips an escalation: three violations within five minutes disables writes altogether, and Local Integrations shows "writes auto-disabled". Restart dayGLANCE to re-enable them. Reads keep working throughout, so a client that can still read the schedule but silently fails every change is the signature of this rather than of a lost connection.
+
+**A write was refused with `routine_conflict`.** The requested time overlaps a routine block. Routines are read-only over MCP, so dayGLANCE cannot move one out of the way, and it will not silently shift your task to the next free slot either: a success reporting a time you did not ask for is worse than a refusal. Pick a time that does not overlap. `dayglance_get_day` lists routine blocks for the date, so the free parts of the day are visible before you write.
+
 **Port collision.** Another process holds 7893 and dayGLANCE settings show a port error, or the bridge reports the server unreachable while dayGLANCE is running. Change the port in Local Integrations. Direct-download builds propagate it through the discovery file automatically; `.mcpb` users update the extension's Port field, manual entries pass `--port`, and Claude Code entries update the URL.
 
 **Stale token after rotation.** Errors say dayGLANCE "rejected the token", likely rotated. Direct-download builds rewrite the discovery file on rotation, so a bridge restart (restart Claude Desktop) picks up the new token. Anywhere the token was pasted manually (MAS Token field, `--token`, Claude Code header), re-copy it from Local Integrations.
@@ -108,6 +124,10 @@ Every bridge error names its likely cause; these are the failures that actually 
 **Both the `.mcpb` and the setup button registered at once.** Two dayglance servers appear, tools show up twice, and one of them may hold a stale config. Keep one: either uninstall the extension in Claude Desktop's Extensions page, or remove the `dayglance` entry the setup button wrote from `claude_desktop_config.json`.
 
 **dayGLANCE is running but calls fail with `renderer_unavailable`.** The listener is up but the app's window process is not answering, typically right after a crash or during startup. Wait for the app to finish loading, or relaunch dayGLANCE. The error is deliberate: a dead renderer must never masquerade as an empty schedule.
+
+## What the tools do
+
+This page covers getting connected. For the tools themselves, their arguments, the block types they return, and every error code they can raise, see the [dayGLANCE tool reference](https://github.com/krelltunez/dayGLANCE/blob/main/docs/mcp-tools-reference.md).
 
 ## License
 
