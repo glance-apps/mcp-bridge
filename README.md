@@ -6,7 +6,9 @@ Claude Desktop and most editor integrations launch MCP servers over stdio. dayGL
 
 ## Before any path: enable the server
 
-In dayGLANCE, open **Settings**, then **Local Integrations**, and enable the **MCP server**. Reads, writes, and device calendar access are separate opt-ins on the same screen. Nothing below works until the server is enabled, and dayGLANCE must be running for any client to connect: on macOS the window can be closed because the app stays alive in the background, but a quit app means no listener.
+In dayGLANCE, open **Settings**, then **Local Integrations**, and enable the **MCP server**. Reads, writes, and device calendar access are separate opt-ins on the same screen. Nothing below works until the server is enabled, and dayGLANCE must be running for any client to connect: on macOS the window can be closed because the app stays alive in the background, but a quit app means no listener. **An assistant listing dayGLANCE tools is not evidence that writes are enabled.** The write tools are always advertised; the consent tier is enforced per call. If writes are off, the tools appear in the client's tool list and the first write returns `read_only_mode`. Check Local Integrations, not the assistant.
+
+> **Mac App Store build?** You will need to paste the access token manually. MAS builds write no discovery file, so the bridge cannot find dayGLANCE on its own. See [Mac App Store builds](#mac-app-store-builds-the-token-is-manual-on-purpose).
 
 ## Pick your install path
 
