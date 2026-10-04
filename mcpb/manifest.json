@@ -3,8 +3,8 @@
   "name": "dayglance",
   "display_name": "dayGLANCE",
   "version": "0.1.0",
-  "description": "Read and manage your dayGLANCE schedule, tasks, and goals. All data stays on your machine.",
-  "long_description": "Connects Claude Desktop to the dayGLANCE app running on this computer. Tools include reading the day and week, listing inbox tasks, goal progress, creating and scheduling tasks, and completion. Enable the MCP server in dayGLANCE under Settings, then Local Integrations. Direct-download builds of dayGLANCE are discovered automatically. If you installed dayGLANCE from the Mac App Store, copy the token from the same settings screen into the Token field here.",
+  "description": "Read and manage your dayGLANCE schedule, tasks, goals, and projects. All data stays on your machine.",
+  "long_description": "Connects Claude Desktop to the dayGLANCE app running on this computer. Claude can read your day and week, your inbox, the Bucket List, and your goals, projects and areas, and can create, schedule, move, resize and complete tasks, manage subtasks, and create and update goals and projects. Every change can be undone in dayGLANCE, and nothing can be deleted or archived from Claude. Enable the MCP server in dayGLANCE under Settings, then Local Integrations. Direct-download builds of dayGLANCE are discovered automatically. If you installed dayGLANCE from the Mac App Store, copy the token from the same settings screen into the Token field here.",
   "author": {
     "name": "GLANCE Apps",
     "url": "https://glance-apps.com"
