@@ -1,0 +1,55 @@
+{
+  "manifest_version": "0.3",
+  "name": "lastglance",
+  "display_name": "lastGLANCE",
+  "version": "0.1.0",
+  "description": "Read and keep up your lastGLANCE chores and People. All data stays on your machine.",
+  "long_description": "Connects Claude Desktop to the lastGLANCE app running on this computer. Claude can read your chores, categories and what was done when, and, if you allow it, your People: their dates and the contacts you logged. With changes allowed, it can mark chores done, add and edit chores and categories, and add and edit People, their dates, contacts and circles. Every change can be undone in lastGLANCE, and nothing can be deleted from Claude. Turn on AI assistants (MCP) in lastGLANCE under Settings, then Integrations. Direct-download builds of lastGLANCE are discovered automatically. If you installed lastGLANCE from the Mac App Store, copy the token from the same settings screen into the Token field here.",
+  "author": {
+    "name": "GLANCE Apps",
+    "url": "https://glance-apps.com"
+  },
+  "homepage": "https://github.com/glance-apps/mcp-bridge",
+  "license": "MIT",
+  "server": {
+    "type": "node",
+    "entry_point": "server/bridge.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/bridge.js",
+        "--app",
+        "lastglance"
+      ],
+      "env": {
+        "LASTGLANCE_MCP_TOKEN": "${user_config.token}",
+        "LASTGLANCE_MCP_PORT": "${user_config.port}"
+      }
+    }
+  },
+  "user_config": {
+    "token": {
+      "type": "string",
+      "title": "lastGLANCE MCP token",
+      "description": "Only needed for Mac App Store installs of lastGLANCE. Copy it from lastGLANCE Settings, then Integrations. Direct-download builds are discovered automatically and can leave this empty.",
+      "sensitive": true,
+      "required": false
+    },
+    "port": {
+      "type": "number",
+      "title": "Port",
+      "description": "The MCP server port shown in lastGLANCE Settings. Leave at 7900 unless you changed it there.",
+      "default": 7900,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32"
+    ],
+    "runtimes": {
+      "node": ">=20"
+    }
+  }
+}

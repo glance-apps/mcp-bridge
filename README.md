@@ -1,8 +1,19 @@
 # @glance-apps/mcp-bridge
 
-stdio to Streamable HTTP bridge for the [dayGLANCE](https://www.glance-apps.com) MCP server. This README is the canonical setup guide for connecting AI clients to dayGLANCE; the site page explains what the capability is, this page covers how to install and configure it.
+stdio to Streamable HTTP bridge for the GLANCE apps' MCP servers: [dayGLANCE](https://www.glance-apps.com) and [lastGLANCE](https://www.glance-apps.com/lastglance). This README is the canonical setup guide for connecting AI clients to them; each app's site page explains what the capability is, this page covers how to install and configure it.
 
-Claude Desktop and most editor integrations launch MCP servers over stdio. dayGLANCE serves MCP over local HTTP at `127.0.0.1:7893/mcp`. This bridge is the pipe between the two: stdio on one side, HTTP on the other. It is stateless and contains no tools, no business logic, and no data handling. Everything lives in dayGLANCE.
+Claude Desktop and most editor integrations launch MCP servers over stdio. Each GLANCE app serves MCP over local HTTP on its own computer. This bridge is the pipe between the two: stdio on one side, HTTP on the other. It is stateless and contains no tools, no business logic, and no data handling. Everything lives in the app it connects to.
+
+## Which app?
+
+The bridge connects to one app, chosen with `--app`. Each app has its own setup button, its own `.mcpb` extension and its own settings, so you only ever see the app you connect.
+
+| App | `--app` | Default address | Setup guide |
+|---|---|---|---|
+| dayGLANCE | `dayglance` (the default, so existing setups need nothing) | `127.0.0.1:7893/mcp` | [dayGLANCE](#before-any-path-enable-the-server), below |
+| lastGLANCE | `lastglance` | `127.0.0.1:7900/mcp` | [lastGLANCE](#lastglance) |
+
+Both apps can run side by side: they use different ports, discovery files and environment variables.
 
 ## Before any path: enable the server
 
@@ -129,9 +140,52 @@ Every bridge error names its likely cause; these are the failures that actually 
 
 **dayGLANCE is running but calls fail with `renderer_unavailable`.** The listener is up but the app's window process is not answering, typically right after a crash or during startup. Wait for the app to finish loading, or relaunch dayGLANCE. The error is deliberate: a dead renderer must never masquerade as an empty schedule.
 
+## lastGLANCE
+
+Everything above applies to lastGLANCE too, with lastGLANCE's own names. The differences:
+
+**Enable the server.** In lastGLANCE, open **Settings**, then **Integrations**, and turn on **AI assistants (MCP)**: Chores, or Chores and People. Changes are a separate **Allow changes** switch on the same screen. lastGLANCE must be running.
+
+**Setup button.** Direct-download builds of lastGLANCE on macOS and Windows ship this bridge and offer **Set up Claude Desktop** on the same screen. It writes a `lastglance` entry, never touching a `dayglance` one.
+
+**`.mcpb` bundle.** Download `lastglance-mcp-bridge.mcpb` from [Releases](https://github.com/glance-apps/mcp-bridge/releases) and drag it into Claude Desktop's Settings, Extensions page. Mac App Store installs paste the token into its Token field.
+
+**Manual entry with `npx`:**
+
+```json
+{
+  "mcpServers": {
+    "lastglance": {
+      "command": "npx",
+      "args": ["-y", "@glance-apps/mcp-bridge", "--app", "lastglance"]
+    }
+  }
+}
+```
+
+The package also installs a `lastglance-mcp-bridge` command that needs no `--app`. Other stdio clients take the same command and arguments.
+
+**Claude Code** connects directly; Settings shows the line to copy, with your token:
+
+```
+claude mcp add --transport http lastglance http://127.0.0.1:7900/mcp --header "Authorization: Bearer YOUR_TOKEN"
+```
+
+**How the bridge finds lastGLANCE.** `--port` and `--token`, then `LASTGLANCE_MCP_TOKEN` and `LASTGLANCE_MCP_PORT`, then the discovery file direct-download builds write while the server is on:
+
+- Windows: `%APPDATA%\lastGLANCE\mcp.json`
+- Linux: `$XDG_CONFIG_HOME/lastGLANCE/mcp.json`, falling back to `~/.config/lastGLANCE/mcp.json`
+- macOS (direct download): `~/Library/Application Support/lastGLANCE/mcp.json`
+
+Mac App Store builds write no discovery file, for the same reason as dayGLANCE's.
+
+**Troubleshooting** is as above, with lastGLANCE's names: errors name lastGLANCE, writes refused with `read_only_mode` mean **Allow changes** is off, and People tools are missing unless the tier is **Chores and People**. Writes are limited to 30 a minute, and repeated overruns pause them until lastGLANCE restarts. Every change an assistant makes can be undone from lastGLANCE's Settings or its tray menu, which also turns the server off.
+
+The tools: the [lastGLANCE tool reference](https://github.com/krelltunez/lastGLANCE/blob/main/docs/mcp-tools-reference.md).
+
 ## What the tools do
 
-This page covers getting connected. For the tools themselves, their arguments, the block types they return, and every error code they can raise, see the [dayGLANCE tool reference](https://github.com/krelltunez/dayGLANCE/blob/main/docs/mcp-tools-reference.md).
+This page covers getting connected. For the tools themselves, their arguments, what they return, and every error code they can raise, see the [dayGLANCE tool reference](https://github.com/krelltunez/dayGLANCE/blob/main/docs/mcp-tools-reference.md) and the [lastGLANCE tool reference](https://github.com/krelltunez/lastGLANCE/blob/main/docs/mcp-tools-reference.md).
 
 ## License
 

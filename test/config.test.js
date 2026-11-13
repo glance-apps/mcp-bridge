@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { parseArgs, resolveConfig } from '../src/config.js';
 import { discoveryPaths, isContainerPath, DEFAULT_PORT } from '../src/paths.js';
-import { missingTokenMessage, unreachableMessage, unauthorizedMessage } from '../src/errors.js';
+import { missingTokenMessage, unreachableMessage, unauthorizedMessage, unknownAppMessage } from '../src/errors.js';
+import { APPS, appProfile } from '../src/apps.js';
 
 // Configuration priority (spec §3.4): args, then env, then discovery. The
 // MAS rule is structural: no container path in the darwin candidate list,
@@ -190,4 +191,62 @@ test('unexpanded Claude Desktop templates behave as unset, never as values', () 
   });
   assert.equal(mixed.token, 'real-token');
   assert.equal(mixed.port, 7999);
+});
+
+// ── App profiles (0.2.0): one bridge, one profile per GLANCE app ─────────────
+
+test('with no --app the profile is dayGLANCE, exactly as before profiles', () => {
+  const r = resolveConfig(base);
+  assert.equal(r.app.id, 'dayglance');
+  assert.equal(r.port, 7893);
+  assert.deepEqual(discoveryPaths('darwin', {}, HOME), discoveryPaths('darwin', {}, HOME, APPS.dayglance));
+  assert.equal(unreachableMessage(7893), unreachableMessage(7893, APPS.dayglance));
+});
+
+test('--app lastglance reads lastGLANCE\'s variables, discovery file and default port, and nothing of dayGLANCE\'s', () => {
+  const reads = [];
+  const r = resolveConfig({
+    ...base,
+    argv: ['--app', 'lastglance'],
+    env: { DAYGLANCE_MCP_TOKEN: 'dayglance-token', DAYGLANCE_MCP_PORT: '7893' },
+    readFile: (p) => { reads.push(p); noFile(); },
+  });
+  assert.equal(r.app.id, 'lastglance');
+  assert.equal(r.token, null);          // dayGLANCE's token is not lastGLANCE's
+  assert.equal(r.port, 7900);
+  assert.deepEqual(reads, ['/Users/casey/Library/Application Support/lastGLANCE/mcp.json']);
+
+  const viaEnv = resolveConfig({ ...base, argv: ['--app=LastGlance'], env: { LASTGLANCE_MCP_TOKEN: 't', LASTGLANCE_MCP_PORT: '7999' } });
+  assert.deepEqual([viaEnv.app.id, viaEnv.token, viaEnv.port], ['lastglance', 't', 7999]);
+});
+
+test('lastGLANCE\'s discovery file is in its own data folder on every platform', () => {
+  assert.deepEqual(discoveryPaths('win32', { APPDATA: 'C:\\Users\\casey\\AppData\\Roaming' }, 'C:\\Users\\casey', APPS.lastglance),
+    [join('C:\\Users\\casey\\AppData\\Roaming', 'lastGLANCE', 'mcp.json')]);
+  assert.deepEqual(discoveryPaths('linux', {}, '/home/casey', APPS.lastglance), ['/home/casey/.config/lastGLANCE/mcp.json']);
+  for (const p of discoveryPaths('darwin', {}, HOME, APPS.lastglance)) assert.equal(isContainerPath(p, HOME), false);
+});
+
+test('an unknown --app resolves nothing rather than guessing an app', () => {
+  const r = resolveConfig({ ...base, argv: ['--app', 'nextglance'], env: { DAYGLANCE_MCP_TOKEN: 't' } });
+  assert.equal(r.app, null);
+  assert.equal(r.unknownApp, 'nextglance');
+  assert.equal(r.token, null);
+  assert.ok(unknownAppMessage('nextglance').includes('dayglance, lastglance'));
+  assert.equal(appProfile('NEXTGLANCE'), null);
+  assert.equal(appProfile(undefined).id, 'dayglance');
+});
+
+test('a lastGLANCE user\'s messages name lastGLANCE and its settings, never dayGLANCE', () => {
+  const messages = [
+    missingTokenMessage('darwin', APPS.lastglance), missingTokenMessage('win32', APPS.lastglance),
+    unreachableMessage(7900, APPS.lastglance), unauthorizedMessage(APPS.lastglance),
+  ];
+  for (const m of messages) {
+    assert.ok(m.includes('lastGLANCE'), m);
+    assert.ok(!/dayGLANCE|DAYGLANCE/.test(m), `dayGLANCE in: ${m}`);
+    assert.ok(!m.includes('\u2014') && !m.includes('\u2013'), `dash in: ${m}`);
+  }
+  assert.ok(missingTokenMessage('win32', APPS.lastglance).includes('LASTGLANCE_MCP_TOKEN'));
+  assert.ok(unreachableMessage(7900, APPS.lastglance).includes('Settings, then Integrations'));
 });

@@ -1,17 +1,21 @@
-// Configuration resolution, pure. Priority order (spec §3.4):
+// Configuration resolution, pure. Which app is chosen first (--app; dayGLANCE
+// when absent), then, for that app (src/apps.js), in priority order (spec §3.4):
 //   1. --port / --token command line arguments
-//   2. DAYGLANCE_MCP_TOKEN and DAYGLANCE_MCP_PORT environment variables
-//   3. the discovery file dayGLANCE writes (direct-download builds only)
+//   2. the app's environment variables (DAYGLANCE_MCP_TOKEN and
+//      DAYGLANCE_MCP_PORT; LASTGLANCE_MCP_* for lastGLANCE)
+//   3. the discovery file the app writes (direct-download builds only)
+//   4. the app's default port
 // Sources may mix: a token from the environment combines with a port from
 // discovery. The discovery reader is injected so this stays pure.
-import { discoveryPaths, isContainerPath, DEFAULT_PORT } from './paths.js';
+import { discoveryPaths, isContainerPath } from './paths.js';
+import { appProfile } from './apps.js';
 
-/** Parse --port/--token in both "--port 7893" and "--port=7893" forms. */
+/** Parse --app/--port/--token in both "--port 7893" and "--port=7893" forms. */
 export function parseArgs(argv) {
   const out = {};
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    for (const key of ['port', 'token']) {
+    for (const key of ['app', 'port', 'token']) {
       const flag = `--${key}`;
       if (arg === flag) out[key] = argv[++i];
       else if (arg.startsWith(flag + '=')) out[key] = arg.slice(flag.length + 1);
@@ -37,7 +41,9 @@ function asPort(value) {
 }
 
 /**
- * Resolve {port, token, sources} from args, env, and discovery.
+ * Resolve {app, port, token, sources} from args, env, and discovery. `app` is
+ * null for an --app this bridge does not know (with `unknownApp` naming it),
+ * and nothing else is resolved then: guessing another app's port would be worse.
  * `readFile` is fs.readFileSync-shaped, injected for testability; `paths`
  * overrides the candidate list so tests can prove the container guard holds
  * even against a list that wrongly includes a container path. Discovery
@@ -45,11 +51,15 @@ function asPort(value) {
  */
 export function resolveConfig({ argv, env, platform, home, readFile, paths }) {
   const args = parseArgs(argv);
-  for (const key of ['port', 'token']) {
+  for (const key of ['app', 'port', 'token']) {
     if (isUnexpandedTemplate(args[key])) delete args[key];
   }
-  const envPort = isUnexpandedTemplate(env.DAYGLANCE_MCP_PORT) ? undefined : env.DAYGLANCE_MCP_PORT;
-  const envToken = isUnexpandedTemplate(env.DAYGLANCE_MCP_TOKEN) ? undefined : env.DAYGLANCE_MCP_TOKEN;
+  const app = appProfile(args.app);
+  if (!app) return { app: null, unknownApp: args.app, port: null, token: null, sources: { port: null, token: null }, discoveryError: null };
+  const rawPort = env[`${app.envPrefix}_PORT`];
+  const rawToken = env[`${app.envPrefix}_TOKEN`];
+  const envPort = isUnexpandedTemplate(rawPort) ? undefined : rawPort;
+  const envToken = isUnexpandedTemplate(rawToken) ? undefined : rawToken;
   let port = asPort(args.port);
   let token = args.token || null;
   const sources = { port: port !== null ? 'args' : null, token: token ? 'args' : null };
@@ -65,7 +75,7 @@ export function resolveConfig({ argv, env, platform, home, readFile, paths }) {
 
   let discoveryError = null;
   if (port === null || !token) {
-    for (const candidate of paths ?? discoveryPaths(platform, env, home)) {
+    for (const candidate of paths ?? discoveryPaths(platform, env, home, app)) {
       if (isContainerPath(candidate, home)) continue; // never read into a sandbox container
       try {
         const parsed = JSON.parse(readFile(candidate));
@@ -84,5 +94,5 @@ export function resolveConfig({ argv, env, platform, home, readFile, paths }) {
     }
   }
 
-  return { port: port ?? DEFAULT_PORT, token, sources, discoveryError };
+  return { app, port: port ?? app.defaultPort, token, sources, discoveryError };
 }

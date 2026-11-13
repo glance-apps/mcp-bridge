@@ -1,14 +1,17 @@
 {
   "name": "@glance-apps/mcp-bridge",
-  "version": "0.1.2",
-  "description": "stdio to Streamable HTTP bridge for the dayGLANCE MCP server. A stateless pipe: tools and data live in dayGLANCE.",
+  "version": "0.2.0",
+  "description": "stdio to Streamable HTTP bridge for the GLANCE apps' MCP servers (dayGLANCE, lastGLANCE). A stateless pipe: tools and data live in the app.",
   "type": "module",
   "bin": {
-    "dayglance-mcp-bridge": "bridge.js"
+    "mcp-bridge": "bridge.js",
+    "dayglance-mcp-bridge": "bridge.js",
+    "lastglance-mcp-bridge": "lastglance-mcp-bridge.js"
   },
   "main": "bridge.js",
   "files": [
     "bridge.js",
+    "lastglance-mcp-bridge.js",
     "src/",
     "README.md",
     "LICENSE"
@@ -19,9 +22,9 @@
   "scripts": {
     "test": "node --test",
     "mcpb:stage": "node scripts/stage-mcpb.mjs",
-    "mcpb:pack": "npm run mcpb:stage && npx @anthropic-ai/mcpb pack dist-mcpb/bundle dist-mcpb/dayglance-mcp-bridge.mcpb",
+    "mcpb:pack": "node scripts/stage-mcpb.mjs dayglance && npx @anthropic-ai/mcpb pack dist-mcpb/dayglance dist-mcpb/dayglance-mcp-bridge.mcpb && node scripts/stage-mcpb.mjs lastglance && npx @anthropic-ai/mcpb pack dist-mcpb/lastglance dist-mcpb/lastglance-mcp-bridge.mcpb",
     "mcpb:sign": "npx @anthropic-ai/mcpb sign dist-mcpb/dayglance-mcp-bridge.mcpb --self-signed",
-    "mcpb:check": "node scripts/check-mcpb.mjs dist-mcpb/dayglance-mcp-bridge.mcpb",
+    "mcpb:check": "node scripts/check-mcpb.mjs dist-mcpb/dayglance-mcp-bridge.mcpb && node scripts/check-mcpb.mjs dist-mcpb/lastglance-mcp-bridge.mcpb",
     "mcpb": "npm run mcpb:pack && npm run mcpb:check"
   },
   "devDependencies": {
@@ -35,6 +38,7 @@
     "mcp",
     "model-context-protocol",
     "dayglance",
+    "lastglance",
     "bridge",
     "stdio"
   ],
