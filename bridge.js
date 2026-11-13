@@ -1,25 +1,26 @@
 #!/usr/bin/env node
-// dayGLANCE MCP bridge: stdio on one side, Streamable HTTP on the other.
+// The GLANCE apps' MCP bridge: stdio on one side, Streamable HTTP on the other.
 // Stateless, no business logic, no tool definitions. It is a pipe. Every
-// tool, resource, and permission decision lives in dayGLANCE's own MCP
+// tool, resource, and permission decision lives in the app's own MCP
 // listener (spec §3.2); this process exists only because Claude Desktop
-// spawns stdio servers and cannot speak to a local HTTP endpoint.
+// spawns stdio servers and cannot speak to a local HTTP endpoint. --app picks
+// the app (src/apps.js): dayglance when absent, or lastglance.
 //
 // Wire shape: each newline-delimited JSON-RPC message from stdin becomes one
 // POST to http://127.0.0.1:<port>/mcp with the bearer token. JSON responses
 // and SSE-framed responses both stream back to stdout as newline-delimited
 // messages. Failures are answered as JSON-RPC errors whose messages name the
-// LIKELY CAUSE (dayGLANCE not running, MCP off, token rotated), never a bare
+// LIKELY CAUSE (the app not running, MCP off, token rotated), never a bare
 // connection error.
 //
 // Runs on Node 20+ (built-in fetch) and equally under ELECTRON_RUN_AS_NODE=1,
-// which is how the copy bundled inside dayGLANCE's direct-download builds is
+// which is how the copy bundled inside the apps' direct-download builds is
 // spawned. Dependency-free by design.
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import process from 'node:process';
 import { resolveConfig } from './src/config.js';
-import { missingTokenMessage, unreachableMessage, unauthorizedMessage, unexpectedStatusMessage } from './src/errors.js';
+import { missingTokenMessage, unreachableMessage, unauthorizedMessage, unexpectedStatusMessage, unknownAppMessage } from './src/errors.js';
 
 const config = resolveConfig({
   argv: process.argv.slice(2),
@@ -29,14 +30,20 @@ const config = resolveConfig({
   readFile: (p) => readFileSync(p, 'utf-8'),
 });
 
-if (config.discoveryError) {
-  console.error(`[dayglance-mcp-bridge] discovery file problem at ${config.discoveryError.path}: ${config.discoveryError.message}`);
-}
-if (!config.token) {
-  console.error(`[dayglance-mcp-bridge] ${missingTokenMessage(process.platform)}`);
+if (!config.app) {
+  console.error(`[mcp-bridge] ${unknownAppMessage(config.unknownApp)}`);
   process.exit(1);
 }
-console.error(`[dayglance-mcp-bridge] port ${config.port} (${config.sources.port ?? 'default'}), token from ${config.sources.token}`);
+const app = config.app;
+const TAG = `[${app.id}-mcp-bridge]`;
+if (config.discoveryError) {
+  console.error(`${TAG} discovery file problem at ${config.discoveryError.path}: ${config.discoveryError.message}`);
+}
+if (!config.token) {
+  console.error(`${TAG} ${missingTokenMessage(process.platform, app)}`);
+  process.exit(1);
+}
+console.error(`${TAG} ${app.name}, port ${config.port} (${config.sources.port ?? 'default'}), token from ${config.sources.token}`);
 
 const ENDPOINT = `http://127.0.0.1:${config.port}/mcp`;
 // Sent on requests after initialize negotiates it, per the Streamable HTTP
@@ -54,7 +61,7 @@ function pumpSse(text) {
     try {
       relayResponse(JSON.parse(data));
     } catch {
-      console.error(`[dayglance-mcp-bridge] unparseable SSE data from listener: ${data.slice(0, 120)}`);
+      console.error(`${TAG} unparseable SSE data from listener: ${data.slice(0, 120)}`);
     }
   }
 }
@@ -81,15 +88,15 @@ async function forward(msg) {
       body: JSON.stringify(msg),
     });
   } catch (err) {
-    const message = unreachableMessage(config.port);
-    console.error(`[dayglance-mcp-bridge] ${message} (${err?.cause?.code ?? err?.message ?? err})`);
+    const message = unreachableMessage(config.port, app);
+    console.error(`${TAG} ${message} (${err?.cause?.code ?? err?.message ?? err})`);
     if (hasId) jsonRpcError(msg.id, message);
     return;
   }
 
   if (res.status === 401 || res.status === 403) {
-    const message = unauthorizedMessage();
-    console.error(`[dayglance-mcp-bridge] ${message}`);
+    const message = unauthorizedMessage(app);
+    console.error(`${TAG} ${message}`);
     if (hasId) jsonRpcError(msg.id, message);
     return;
   }
@@ -99,8 +106,8 @@ async function forward(msg) {
   }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    const message = unexpectedStatusMessage(res.status);
-    console.error(`[dayglance-mcp-bridge] ${message} ${body.slice(0, 200)}`);
+    const message = unexpectedStatusMessage(res.status, app);
+    console.error(`${TAG} ${message} ${body.slice(0, 200)}`);
     if (hasId) jsonRpcError(msg.id, message);
     return;
   }
@@ -114,8 +121,8 @@ async function forward(msg) {
     try {
       relayResponse(JSON.parse(text));
     } catch {
-      console.error(`[dayglance-mcp-bridge] unparseable response from listener: ${text.slice(0, 120)}`);
-      if (hasId) jsonRpcError(msg.id, unexpectedStatusMessage(res.status));
+      console.error(`${TAG} unparseable response from listener: ${text.slice(0, 120)}`);
+      if (hasId) jsonRpcError(msg.id, unexpectedStatusMessage(res.status, app));
     }
   }
 }
@@ -142,7 +149,7 @@ process.stdin.on('data', (chunk) => {
     try {
       msg = JSON.parse(line);
     } catch {
-      console.error(`[dayglance-mcp-bridge] skipping unparseable stdin line: ${line.slice(0, 120)}`);
+      console.error(`${TAG} skipping unparseable stdin line: ${line.slice(0, 120)}`);
       continue;
     }
     // Concurrent per message: each response carries its request id, and
