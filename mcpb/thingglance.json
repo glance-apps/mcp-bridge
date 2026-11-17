@@ -1,0 +1,55 @@
+{
+  "manifest_version": "0.3",
+  "name": "thingglance",
+  "display_name": "thingGLANCE",
+  "version": "0.1.0",
+  "description": "Read and keep up the things you own and their dates in thingGLANCE. All data stays on your machine.",
+  "long_description": "Connects Claude Desktop to the thingGLANCE app running on this computer. Claude can read your things, their coverage (warranties, subscriptions, support windows), your plans, the dates coming up and what is waiting on a decision. With changes allowed, it can add and edit things and plans, add coverage, and settle a date in the queue. Every change can be undone in thingGLANCE, and nothing can be deleted from Claude. Turn on AI assistants (MCP) in thingGLANCE under Settings, then Integrations. Direct-download builds of thingGLANCE are discovered automatically. If you installed thingGLANCE from the Mac App Store, copy the token from the same settings screen into the Token field here.",
+  "author": {
+    "name": "GLANCE Apps",
+    "url": "https://glance-apps.com"
+  },
+  "homepage": "https://github.com/glance-apps/mcp-bridge",
+  "license": "MIT",
+  "server": {
+    "type": "node",
+    "entry_point": "server/bridge.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/bridge.js",
+        "--app",
+        "thingglance"
+      ],
+      "env": {
+        "THINGGLANCE_MCP_TOKEN": "${user_config.token}",
+        "THINGGLANCE_MCP_PORT": "${user_config.port}"
+      }
+    }
+  },
+  "user_config": {
+    "token": {
+      "type": "string",
+      "title": "thingGLANCE MCP token",
+      "description": "Only needed for Mac App Store installs of thingGLANCE. Copy it from thingGLANCE Settings, then Integrations. Direct-download builds are discovered automatically and can leave this empty.",
+      "sensitive": true,
+      "required": false
+    },
+    "port": {
+      "type": "number",
+      "title": "Port",
+      "description": "The MCP server port shown in thingGLANCE Settings. Leave at 7910 unless you changed it there.",
+      "default": 7910,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32"
+    ],
+    "runtimes": {
+      "node": ">=20"
+    }
+  }
+}

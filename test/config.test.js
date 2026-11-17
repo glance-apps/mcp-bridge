@@ -227,12 +227,43 @@ test('lastGLANCE\'s discovery file is in its own data folder on every platform',
   for (const p of discoveryPaths('darwin', {}, HOME, APPS.lastglance)) assert.equal(isContainerPath(p, HOME), false);
 });
 
+test('--app thingglance reads thingGLANCE\'s variables, discovery file and default port, and nothing of another app\'s', () => {
+  const reads = [];
+  const r = resolveConfig({
+    ...base,
+    argv: ['--app', 'thingglance'],
+    env: { DAYGLANCE_MCP_TOKEN: 'dayglance-token', LASTGLANCE_MCP_TOKEN: 'lastglance-token', LASTGLANCE_MCP_PORT: '7900' },
+    readFile: (p) => { reads.push(p); noFile(); },
+  });
+  assert.equal(r.app.id, 'thingglance');
+  assert.equal(r.token, null);          // a sibling's token is not thingGLANCE's
+  assert.equal(r.port, 7910);
+  assert.deepEqual(reads, ['/Users/casey/Library/Application Support/thingGLANCE/mcp.json']);
+
+  const viaEnv = resolveConfig({ ...base, argv: ['--app=ThingGlance'], env: { THINGGLANCE_MCP_TOKEN: 't', THINGGLANCE_MCP_PORT: '7999' } });
+  assert.deepEqual([viaEnv.app.id, viaEnv.token, viaEnv.port], ['thingglance', 't', 7999]);
+});
+
+test('thingGLANCE\'s discovery file is in its own data folder on every platform', () => {
+  assert.deepEqual(discoveryPaths('win32', { APPDATA: 'C:\\Users\\casey\\AppData\\Roaming' }, 'C:\\Users\\casey', APPS.thingglance),
+    [join('C:\\Users\\casey\\AppData\\Roaming', 'thingGLANCE', 'mcp.json')]);
+  assert.deepEqual(discoveryPaths('linux', {}, '/home/casey', APPS.thingglance), ['/home/casey/.config/thingGLANCE/mcp.json']);
+  for (const p of discoveryPaths('darwin', {}, HOME, APPS.thingglance)) assert.equal(isContainerPath(p, HOME), false);
+});
+
+test('no two apps share a port, a data folder or an environment prefix', () => {
+  const apps = Object.values(APPS);
+  for (const pick of [(a) => a.defaultPort, (a) => a.envPrefix, (a) => a.dirs.darwin.toLowerCase(), (a) => a.dirs.win32.toLowerCase(), (a) => a.dirs.linux.toLowerCase()]) {
+    assert.equal(new Set(apps.map(pick)).size, apps.length);
+  }
+});
+
 test('an unknown --app resolves nothing rather than guessing an app', () => {
   const r = resolveConfig({ ...base, argv: ['--app', 'nextglance'], env: { DAYGLANCE_MCP_TOKEN: 't' } });
   assert.equal(r.app, null);
   assert.equal(r.unknownApp, 'nextglance');
   assert.equal(r.token, null);
-  assert.ok(unknownAppMessage('nextglance').includes('dayglance, lastglance'));
+  assert.ok(unknownAppMessage('nextglance').includes('dayglance, lastglance, thingglance'));
   assert.equal(appProfile('NEXTGLANCE'), null);
   assert.equal(appProfile(undefined).id, 'dayglance');
 });
@@ -249,4 +280,18 @@ test('a lastGLANCE user\'s messages name lastGLANCE and its settings, never dayG
   }
   assert.ok(missingTokenMessage('win32', APPS.lastglance).includes('LASTGLANCE_MCP_TOKEN'));
   assert.ok(unreachableMessage(7900, APPS.lastglance).includes('Settings, then Integrations'));
+});
+
+test('a thingGLANCE user\'s messages name thingGLANCE and its settings, never a sibling app', () => {
+  const messages = [
+    missingTokenMessage('darwin', APPS.thingglance), missingTokenMessage('win32', APPS.thingglance),
+    unreachableMessage(7910, APPS.thingglance), unauthorizedMessage(APPS.thingglance),
+  ];
+  for (const m of messages) {
+    assert.ok(m.includes('thingGLANCE'), m);
+    assert.ok(!/dayGLANCE|DAYGLANCE|lastGLANCE|LASTGLANCE/.test(m), `a sibling app in: ${m}`);
+    assert.ok(!m.includes('\u2014') && !m.includes('\u2013'), `dash in: ${m}`);
+  }
+  assert.ok(missingTokenMessage('win32', APPS.thingglance).includes('THINGGLANCE_MCP_TOKEN'));
+  assert.ok(unreachableMessage(7910, APPS.thingglance).includes('Settings, then Integrations'));
 });

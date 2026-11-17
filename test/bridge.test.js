@@ -61,6 +61,46 @@ test('the lastglance bin finds lastGLANCE through its discovery file and relays 
   }
 });
 
+test('the thingglance bin finds thingGLANCE through its discovery file, not a sibling\'s', async () => {
+  const seen = [];
+  const srv = await listen((req, res) => {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      seen.push({ url: req.url, auth: req.headers.authorization, body: JSON.parse(body) });
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result: { tools: [{ name: 'thingglance_get_overview' }] } }));
+    });
+  });
+  const config = mkdtempSync(join(tmpdir(), 'bridge-test-'));
+  try {
+    // A sibling's file sits beside it, pointing nowhere useful: it must not be read.
+    mkdirSync(join(config, 'lastGLANCE'));
+    writeFileSync(join(config, 'lastGLANCE', 'mcp.json'), JSON.stringify({ port: 1, token: 'lg-token' }));
+    mkdirSync(join(config, 'thingGLANCE'));
+    writeFileSync(join(config, 'thingGLANCE', 'mcp.json'), JSON.stringify({ port: srv.address().port, token: 'tg-token' }));
+    const r = await run('thingglance-mcp-bridge.js', [], { HOME: config, XDG_CONFIG_HOME: config, APPDATA: config });
+    if (process.platform === 'darwin') return; // discovery is under ~/Library there; the paths test covers it
+    assert.equal(r.code, 0, r.err);
+    assert.deepEqual(r.lines, [{ jsonrpc: '2.0', id: 1, result: { tools: [{ name: 'thingglance_get_overview' }] } }]);
+    assert.deepEqual(seen.map((s) => [s.url, s.auth, s.body.method]), [['/mcp', 'Bearer tg-token', 'tools/list']]);
+    assert.match(r.err, /^\[thingglance-mcp-bridge\] thingGLANCE, port \d+ \(discovery\), token from discovery/m);
+  } finally {
+    rmSync(config, { recursive: true, force: true });
+    srv.close();
+  }
+});
+
+test('the thingglance bin names thingGLANCE when it cannot be reached', async () => {
+  const srv = await listen(() => {});
+  const port = srv.address().port;
+  await new Promise((r) => srv.close(r));
+  const r = await run('thingglance-mcp-bridge.js', ['--token', 't', '--port', String(port)], {});
+  assert.equal(r.lines[0].id, 1);
+  assert.match(r.lines[0].error.message, /^Could not reach thingGLANCE on 127\.0\.0\.1:/);
+  assert.doesNotMatch(r.lines[0].error.message, /dayGLANCE|lastGLANCE/);
+});
+
 test('an unreachable app is a JSON-RPC error naming that app', async () => {
   const srv = await listen(() => {});
   const port = srv.address().port;

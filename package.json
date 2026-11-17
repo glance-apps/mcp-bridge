@@ -1,17 +1,19 @@
 {
   "name": "@glance-apps/mcp-bridge",
-  "version": "0.2.0",
-  "description": "stdio to Streamable HTTP bridge for the GLANCE apps' MCP servers (dayGLANCE, lastGLANCE). A stateless pipe: tools and data live in the app.",
+  "version": "0.3.0",
+  "description": "stdio to Streamable HTTP bridge for the GLANCE apps' MCP servers (dayGLANCE, lastGLANCE, thingGLANCE). A stateless pipe: tools and data live in the app.",
   "type": "module",
   "bin": {
     "mcp-bridge": "bridge.js",
     "dayglance-mcp-bridge": "bridge.js",
-    "lastglance-mcp-bridge": "lastglance-mcp-bridge.js"
+    "lastglance-mcp-bridge": "lastglance-mcp-bridge.js",
+    "thingglance-mcp-bridge": "thingglance-mcp-bridge.js"
   },
   "main": "bridge.js",
   "files": [
     "bridge.js",
     "lastglance-mcp-bridge.js",
+    "thingglance-mcp-bridge.js",
     "src/",
     "README.md",
     "LICENSE"
@@ -22,9 +24,9 @@
   "scripts": {
     "test": "node --test",
     "mcpb:stage": "node scripts/stage-mcpb.mjs",
-    "mcpb:pack": "node scripts/stage-mcpb.mjs dayglance && npx @anthropic-ai/mcpb pack dist-mcpb/dayglance dist-mcpb/dayglance-mcp-bridge.mcpb && node scripts/stage-mcpb.mjs lastglance && npx @anthropic-ai/mcpb pack dist-mcpb/lastglance dist-mcpb/lastglance-mcp-bridge.mcpb",
+    "mcpb:pack": "node scripts/stage-mcpb.mjs dayglance && npx @anthropic-ai/mcpb pack dist-mcpb/dayglance dist-mcpb/dayglance-mcp-bridge.mcpb && node scripts/stage-mcpb.mjs lastglance && npx @anthropic-ai/mcpb pack dist-mcpb/lastglance dist-mcpb/lastglance-mcp-bridge.mcpb && node scripts/stage-mcpb.mjs thingglance && npx @anthropic-ai/mcpb pack dist-mcpb/thingglance dist-mcpb/thingglance-mcp-bridge.mcpb",
     "mcpb:sign": "npx @anthropic-ai/mcpb sign dist-mcpb/dayglance-mcp-bridge.mcpb --self-signed",
-    "mcpb:check": "node scripts/check-mcpb.mjs dist-mcpb/dayglance-mcp-bridge.mcpb && node scripts/check-mcpb.mjs dist-mcpb/lastglance-mcp-bridge.mcpb",
+    "mcpb:check": "node scripts/check-mcpb.mjs dist-mcpb/dayglance-mcp-bridge.mcpb && node scripts/check-mcpb.mjs dist-mcpb/lastglance-mcp-bridge.mcpb && node scripts/check-mcpb.mjs dist-mcpb/thingglance-mcp-bridge.mcpb",
     "mcpb": "npm run mcpb:pack && npm run mcpb:check"
   },
   "devDependencies": {
@@ -39,6 +41,7 @@
     "model-context-protocol",
     "dayglance",
     "lastglance",
+    "thingglance",
     "bridge",
     "stdio"
   ],

@@ -4,7 +4,7 @@
 // tool, resource, and permission decision lives in the app's own MCP
 // listener (spec §3.2); this process exists only because Claude Desktop
 // spawns stdio servers and cannot speak to a local HTTP endpoint. --app picks
-// the app (src/apps.js): dayglance when absent, or lastglance.
+// the app (src/apps.js): dayglance when absent, or lastglance, or thingglance.
 //
 // Wire shape: each newline-delimited JSON-RPC message from stdin becomes one
 // POST to http://127.0.0.1:<port>/mcp with the bearer token. JSON responses
