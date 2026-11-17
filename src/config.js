@@ -2,7 +2,8 @@
 // when absent), then, for that app (src/apps.js), in priority order (spec §3.4):
 //   1. --port / --token command line arguments
 //   2. the app's environment variables (DAYGLANCE_MCP_TOKEN and
-//      DAYGLANCE_MCP_PORT; LASTGLANCE_MCP_* for lastGLANCE)
+//      DAYGLANCE_MCP_PORT; LASTGLANCE_MCP_* for lastGLANCE, THINGGLANCE_MCP_*
+//      for thingGLANCE)
 //   3. the discovery file the app writes (direct-download builds only)
 //   4. the app's default port
 // Sources may mix: a token from the environment combines with a port from

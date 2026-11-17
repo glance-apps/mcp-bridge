@@ -1,6 +1,6 @@
 # @glance-apps/mcp-bridge
 
-stdio to Streamable HTTP bridge for the GLANCE apps' MCP servers: [dayGLANCE](https://www.glance-apps.com) and [lastGLANCE](https://www.glance-apps.com/lastglance). This README is the canonical setup guide for connecting AI clients to them; each app's site page explains what the capability is, this page covers how to install and configure it.
+stdio to Streamable HTTP bridge for the GLANCE apps' MCP servers: [dayGLANCE](https://www.glance-apps.com), [lastGLANCE](https://www.glance-apps.com/lastglance) and [thingGLANCE](https://www.glance-apps.com/apps/thingglance). This README is the canonical setup guide for connecting AI clients to them; each app's site page explains what the capability is, this page covers how to install and configure it.
 
 Claude Desktop and most editor integrations launch MCP servers over stdio. Each GLANCE app serves MCP over local HTTP on its own computer. This bridge is the pipe between the two: stdio on one side, HTTP on the other. It is stateless and contains no tools, no business logic, and no data handling. Everything lives in the app it connects to.
 
@@ -12,8 +12,9 @@ The bridge connects to one app, chosen with `--app`. Each app has its own setup 
 |---|---|---|---|
 | dayGLANCE | `dayglance` (the default, so existing setups need nothing) | `127.0.0.1:7893/mcp` | [dayGLANCE](#before-any-path-enable-the-server), below |
 | lastGLANCE | `lastglance` | `127.0.0.1:7900/mcp` | [lastGLANCE](#lastglance) |
+| thingGLANCE | `thingglance` | `127.0.0.1:7910/mcp` | [thingGLANCE](#thingglance) |
 
-Both apps can run side by side: they use different ports, discovery files and environment variables.
+The apps can run side by side: they use different ports, discovery files and environment variables.
 
 ## Before any path: enable the server
 
@@ -183,9 +184,52 @@ Mac App Store builds write no discovery file, for the same reason as dayGLANCE's
 
 The tools: the [lastGLANCE tool reference](https://github.com/krelltunez/lastGLANCE/blob/main/docs/mcp-tools-reference.md).
 
+## thingGLANCE
+
+Everything above applies to thingGLANCE too, with thingGLANCE's own names. The differences:
+
+**Enable the server.** In thingGLANCE, open **Settings**, then **Integrations**, and turn on **AI assistants (MCP)** under "On this computer". Changes are a separate **Allow changes** switch on the same screen. thingGLANCE must be running.
+
+**Setup button.** Direct-download builds of thingGLANCE on macOS and Windows ship this bridge and offer **Set up Claude Desktop** on the same screen. It writes a `thingglance` entry, never touching another app's.
+
+**`.mcpb` bundle.** Download `thingglance-mcp-bridge.mcpb` from [Releases](https://github.com/glance-apps/mcp-bridge/releases) and drag it into Claude Desktop's Settings, Extensions page. Mac App Store installs paste the token into its Token field.
+
+**Manual entry with `npx`:**
+
+```json
+{
+  "mcpServers": {
+    "thingglance": {
+      "command": "npx",
+      "args": ["-y", "@glance-apps/mcp-bridge", "--app", "thingglance"]
+    }
+  }
+}
+```
+
+The package also installs a `thingglance-mcp-bridge` command that needs no `--app`. Other stdio clients take the same command and arguments.
+
+**Claude Code** connects directly; Settings shows the line to copy, with your token:
+
+```
+claude mcp add --transport http thingglance http://127.0.0.1:7910/mcp --header "Authorization: Bearer YOUR_TOKEN"
+```
+
+**How the bridge finds thingGLANCE.** `--port` and `--token`, then `THINGGLANCE_MCP_TOKEN` and `THINGGLANCE_MCP_PORT`, then the discovery file direct-download builds write while the server is on:
+
+- Windows: `%APPDATA%\thingGLANCE\mcp.json`
+- Linux: `$XDG_CONFIG_HOME/thingGLANCE/mcp.json`, falling back to `~/.config/thingGLANCE/mcp.json`
+- macOS (direct download): `~/Library/Application Support/thingGLANCE/mcp.json`
+
+Mac App Store builds write no discovery file, for the same reason as dayGLANCE's.
+
+**Troubleshooting** is as above, with thingGLANCE's names: errors name thingGLANCE, and writes refused with `read_only_mode` mean **Allow changes** is off. Writes are limited to 30 a minute, and repeated overruns pause them until thingGLANCE restarts. Every change an assistant makes can be undone from thingGLANCE's Settings, and nothing can be deleted.
+
+The tools: the [thingGLANCE tool reference](https://github.com/krelltunez/thingGLANCE/blob/main/docs/mcp.md#tools).
+
 ## What the tools do
 
-This page covers getting connected. For the tools themselves, their arguments, what they return, and every error code they can raise, see the [dayGLANCE tool reference](https://github.com/krelltunez/dayGLANCE/blob/main/docs/mcp-tools-reference.md) and the [lastGLANCE tool reference](https://github.com/krelltunez/lastGLANCE/blob/main/docs/mcp-tools-reference.md).
+This page covers getting connected. For the tools themselves, their arguments, what they return, and every error code they can raise, see the [dayGLANCE tool reference](https://github.com/krelltunez/dayGLANCE/blob/main/docs/mcp-tools-reference.md), the [lastGLANCE tool reference](https://github.com/krelltunez/lastGLANCE/blob/main/docs/mcp-tools-reference.md) and the [thingGLANCE tool reference](https://github.com/krelltunez/thingGLANCE/blob/main/docs/mcp.md#tools).
 
 ## License
 

@@ -31,6 +31,15 @@ export const APPS = Object.freeze({
     settings: 'Settings, then Integrations',
     enable: 'turn on AI assistants (MCP)',
   }),
+  thingglance: Object.freeze({
+    id: 'thingglance',
+    name: 'thingGLANCE',
+    defaultPort: 7910,
+    envPrefix: 'THINGGLANCE_MCP',
+    dirs: Object.freeze({ win32: 'thingGLANCE', darwin: 'thingGLANCE', linux: 'thingGLANCE' }),
+    settings: 'Settings, then Integrations',
+    enable: 'turn on AI assistants (MCP)',
+  }),
 });
 
 export const DEFAULT_APP_ID = 'dayglance';
